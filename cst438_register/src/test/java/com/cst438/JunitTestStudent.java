@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
@@ -94,7 +95,6 @@ public class JunitTestStudent {
 		student.setStatusCode(TEST_STUDENT_STATUS_CODE_NO_HOLDS);
 				
 		// given  -- stubs for database repositories that return test data
-	    given(studentRepository.findByEmail(TEST_STUDENT_EMAIL)).willReturn(null);
 	    given(studentRepository.save(any(Student.class))).willReturn(student);
 	    
 	    // create the DTO (data transfer object) for the student to add. 
@@ -105,7 +105,7 @@ public class JunitTestStudent {
 		// then do an http post request with body of studentDTO as JSON
 		response = mvc.perform(
 				MockMvcRequestBuilders
-			      .post("/student")
+			      .post("/student/add")
 			      .content(asJsonString(studentDTO))
 			      .contentType(MediaType.APPLICATION_JSON)
 			      .accept(MediaType.APPLICATION_JSON))
@@ -121,6 +121,49 @@ public class JunitTestStudent {
 		// verify that repository save method was called.
 		verify(studentRepository).save(any(Student.class));
 		
+		
+	}
+	
+	@Test
+	public void createStudentAlreadyInDB()  throws Exception {
+		
+		MockHttpServletResponse response;
+
+		Student student = new Student();
+		student.setStudent_id(TEST_STUDENT_ID);
+		student.setEmail(TEST_STUDENT_EMAIL);
+		student.setName(TEST_STUDENT_NAME);
+		student.setStatus(TEST_STUDENT_STATUS_NO_HOLDS);
+		student.setStatusCode(TEST_STUDENT_STATUS_CODE_NO_HOLDS);
+				
+		// given  -- stubs for database repositories that return test data
+	    given(studentRepository.findByEmail(TEST_STUDENT_EMAIL)).willReturn(student);
+	    
+	    // create the DTO (data transfer object) for the student to add. 
+		StudentDTO studentDTO = new StudentDTO();
+		studentDTO.email = TEST_STUDENT_EMAIL;
+		studentDTO.name = TEST_STUDENT_NAME;
+		
+		// then do an http post request with body of studentDTO as JSON
+		response = mvc.perform(
+				MockMvcRequestBuilders
+			      .post("/student/add")
+			      .content(asJsonString(studentDTO))
+			      .contentType(MediaType.APPLICATION_JSON)
+			      .accept(MediaType.APPLICATION_JSON))
+				.andReturn().getResponse();
+		
+		// verify that return status = 400 which means it sent an error for trying to create a student that is already in the db 
+		assertEquals(400, response.getStatus());
+		
+		// verify that returned data has non zero primary key
+//		StudentDTO result = fromJsonString(response.getContentAsString(), StudentDTO.class);
+//		assertNotEquals( 0  , result.student_id);
+		
+		// verify that repository save method was called.
+		verify(studentRepository, times(0)).save(any(Student.class));
+		
+		
 	}
 	
 	@Test
@@ -134,11 +177,9 @@ public class JunitTestStudent {
 		student.setStatus(TEST_STUDENT_STATUS_NO_HOLDS);
 		student.setStatusCode(TEST_STUDENT_STATUS_CODE_NO_HOLDS);
 				
-		// given  -- stubs for database repositories that return test data and update student to have a hold
+		// given  -- stubs for database repositories that return test data
 	    given(studentRepository.findById(TEST_STUDENT_ID)).willReturn(student);
-	    student.setStatus(TEST_STUDENT_STATUS_HOLD);
-	    student.setStatusCode(TEST_STUDENT_STATUS_CODE_HOLDS);
-	    given(studentRepository.save(any(Student.class))).willReturn(student);
+
 	    
 	    // create the DTO (data transfer object) for the student to update
 		StudentDTO studentDTO = new StudentDTO();
@@ -157,7 +198,8 @@ public class JunitTestStudent {
 		
 		// verify that returned data has non zero primary key
 		StudentDTO result = fromJsonString(response.getContentAsString(), StudentDTO.class);
-		assertNotEquals( 0  , result.student_id);
+		//verify that the student now has a hold
+		assertEquals( TEST_STUDENT_STATUS_HOLD, result.status);
 		
 		// verify that repository save method was called.
 		verify(studentRepository).save(any(Student.class));
@@ -176,9 +218,6 @@ public class JunitTestStudent {
 				
 		// given  -- stubs for database repositories that return test data and updated student
 	    given(studentRepository.findById(TEST_STUDENT_ID)).willReturn(student);
-	    student.setStatus(TEST_STUDENT_STATUS_NO_HOLDS);
-	    student.setStatusCode(TEST_STUDENT_STATUS_CODE_NO_HOLDS);
-	    given(studentRepository.save(any(Student.class))).willReturn(student);
 	    
 	    // create the DTO (data transfer object) for the student to remove hold
 		StudentDTO studentDTO = new StudentDTO();
@@ -197,7 +236,8 @@ public class JunitTestStudent {
 		
 		// verify that returned data has non zero primary key
 		StudentDTO result = fromJsonString(response.getContentAsString(), StudentDTO.class);
-		assertNotEquals( 0  , result.student_id);
+		//verify that the student now does not have a hold
+		assertEquals( TEST_STUDENT_STATUS_NO_HOLDS, result.status);
 		
 		// verify that repository save method was called.
 		verify(studentRepository).save(any(Student.class));

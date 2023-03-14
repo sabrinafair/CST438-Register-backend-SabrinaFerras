@@ -37,7 +37,7 @@ public class StudentController {
 	GradebookService gradebookService;	
 
 	
-	@PostMapping("/student")
+	@PostMapping("/student/add")
 	public StudentDTO createNewStudent(@RequestBody StudentDTO studentDTO) {
 		
 		

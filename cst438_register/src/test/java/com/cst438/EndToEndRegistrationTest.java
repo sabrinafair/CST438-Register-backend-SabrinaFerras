@@ -77,8 +77,8 @@ public class EndToEndRegistrationTest {
 			driver.get(URL);
 			Thread.sleep(SLEEP_DURATION);
 
-			WebElement we = driver.findElement(By.xpath("//button[@id='addNewStudentButton']"));
-			we.click();
+			WebElement addNewStudentButton = driver.findElement(By.xpath("//button[@id='addNewStudentButton']"));
+			addNewStudentButton.click();
 
 			Thread.sleep(SLEEP_DURATION);
 
